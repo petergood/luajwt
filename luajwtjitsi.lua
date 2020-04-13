@@ -1,29 +1,31 @@
 local cjson  = require 'cjson'
 local base64 = require 'base64'
-local crypto = require 'crypto'
+local hmac = require 'openssl.hmac'
+local pkey = require 'openssl.pkey'
+local digest = require 'openssl.digest'
 
 local function signRS (data, key, algo)
-	local privkey = crypto.pkey.from_pem(key, true)
+	local privkey = pkey.new(key, "PEM")
 	if privkey == nil then
 		return nil, 'Not a private PEM key'
 	else
-		return crypto.sign(algo, data, privkey)
+		return privkey:sign(digest.new(key, algo):update(data))
 	end
 end
 
 local function verifyRS (data, signature, key, algo)
-	local pubkey = crypto.pkey.from_pem(key)
+	local pubkey = pkey.new(key, "PEM")
 	if pubkey == nil then
 		return nil, 'Not a public PEM key'
 	else
-		return crypto.verify(algo, data, signature, pubkey)
+		return pubkey:verify(signature, digest.new(key, algo):update(data))
 	end
 end
 
 local alg_sign = {
-	['HS256'] = function(data, key) return crypto.hmac.digest('sha256', data, key, true) end,
-	['HS384'] = function(data, key) return crypto.hmac.digest('sha384', data, key, true) end,
-	['HS512'] = function(data, key) return crypto.hmac.digest('sha512', data, key, true) end,
+	['HS256'] = function(data, key) return hmac.new(key, "sha256"):final(data) end,
+	['HS384'] = function(data, key) return hmac.new(key, "sha384"):final(data) end,
+	['HS512'] = function(data, key) return hmac.new(key, "sha512"):final(data) end,
 	['RS256'] = function(data, key) return signRS(data, key, 'sha256') end,
 	['RS384'] = function(data, key) return signRS(data, key, 'sha384') end,
 	['RS512'] = function(data, key) return signRS(data, key, 'sha512') end
