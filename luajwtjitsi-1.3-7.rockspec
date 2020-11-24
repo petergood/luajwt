@@ -3,8 +3,6 @@ version = "1.3-7"
 
 source = {
 	url = "git://github.com/petergood/luajwt/",
-	tag = "v1.7",
-	branch = "replace_luacrypto"
 }
 
 description = {
